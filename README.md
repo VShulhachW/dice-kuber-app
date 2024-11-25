@@ -5,7 +5,8 @@ A small app to get random dice's number in the local kubernetes.
 
 1. Any docker engine, which could build the image (podman, docker, etc).
 2. Kubernetes engine (as a part of docker, minikube, etc).
-3. Pyhton 3 with flask - to develop the application.
+3. Installed ingress controller, for example [nginx](https://github.com/kubernetes/ingress-nginx/blob/main/docs/deploy/index.md).
+4. Pyhton 3 with flask - to develop the application.
 
 ## Application
 
