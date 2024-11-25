@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dice
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dice
+  template:
+    metadata:
+      labels:
+        app: dice
+    spec:
+      containers:
+        - name: dice
+          volumeMounts:
+            - name: log-volume
+              mountPath: /var/log/app
+          image: diceapp:3
+          imagePullPolicy: Never
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000        
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+
+        - name: fluentd
+          image: fluent/fluentd:v1.17.1-debian-1.1
+          env:
+            - name: FLUENTD_ARGS
+              value: "-c /fluentd/etc/fluent.conf"
+          volumeMounts:
+            - name: log-volume
+              mountPath: /var/log/app
+            - name: fluentd-config
+              mountPath: /fluentd/etc
+      volumes:
+        - name: log-volume
+          emptyDir: {}
+        - name: fluentd-config
+          configMap:
+            name: fluentd-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentd-config
+data:
+  fluent.conf: |
+    <source>
+      @type tail
+      path /var/log/app/app.log
+      pos_file /var/log/app/app.log.pos
+      tag app.log
+      format none
+    </source>
+
+    <match app.log>
+      @type stdout
+    </match>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dice-service
+  namespace: default
+spec:
+  type: NodePort
+  selector:
+    app: dice
+  ports:
+    - port: 8000
+      targetPort: 8000
+      nodePort: 30001
